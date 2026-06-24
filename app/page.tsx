@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
 import { RandomMessageDemo } from "@/app/components/random-message-demo";
 import { API_VERSION } from "@/lib/api/config";
-import { CATEGORIES, ENDPOINTS } from "@/lib/site/endpoints";
+import { ENDPOINTS } from "@/lib/site/endpoints";
+import { getCategories, getRandomMessage } from "@/lib/messages/service";
 
 async function getBaseUrl(): Promise<string> {
   const headerList = await headers();
@@ -20,8 +21,26 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
+function getTryUrl(baseUrl: string, path: string): string {
+  if (path.includes(":id")) {
+    return `${baseUrl}/api/v1/messages/1`;
+  }
+
+  if (path === "/api/v1/search") {
+    return `${baseUrl}/api/v1/search?q=loading`;
+  }
+
+  return `${baseUrl}${path}`;
+}
+
 export default async function Home() {
   const baseUrl = await getBaseUrl();
+  const categories = getCategories();
+  const initialMessage = getRandomMessage();
+
+  if (!initialMessage) {
+    throw new Error("No messages available");
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -40,7 +59,7 @@ export default async function Home() {
           </p>
         </header>
 
-        <RandomMessageDemo />
+        <RandomMessageDemo initialMessage={initialMessage} />
 
         <section className="space-y-4">
           <h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">
@@ -75,7 +94,7 @@ console.log(data.message);`}</CodeBlock>
                   </p>
                 </div>
                 <a
-                  href={`${baseUrl}${endpoint.path}`}
+                  href={getTryUrl(baseUrl, endpoint.path)}
                   className="shrink-0 text-sm font-medium text-zinc-950 underline-offset-4 hover:underline dark:text-zinc-50"
                 >
                   Try it
@@ -118,7 +137,7 @@ console.log(data.message);`}</CodeBlock>
             .
           </p>
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <span
                 key={category}
                 className="rounded-full border border-zinc-200 px-3 py-1 font-mono text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300"

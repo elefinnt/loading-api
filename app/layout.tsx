@@ -16,6 +16,18 @@ export const metadata: Metadata = {
   title: "Loading API",
   description:
     "A free REST API for witty loading messages. Random lines for spinners, splash screens, and CLIs.",
+  openGraph: {
+    title: "Loading API",
+    description:
+      "A free REST API for witty loading messages. Random lines for spinners, splash screens, and CLIs.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Loading API",
+    description:
+      "A free REST API for witty loading messages. Random lines for spinners, splash screens, and CLIs.",
+  },
 };
 
 export default function RootLayout({

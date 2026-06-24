@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Message } from "@/types/message";
 
-export function RandomMessageDemo() {
-  const [message, setMessage] = useState<Message | null>(null);
-  const [loading, setLoading] = useState(true);
+interface RandomMessageDemoProps {
+  initialMessage: Message;
+}
+
+export function RandomMessageDemo({ initialMessage }: RandomMessageDemoProps) {
+  const [message, setMessage] = useState(initialMessage);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRandom = useCallback(async () => {
@@ -28,10 +32,6 @@ export function RandomMessageDemo() {
     }
   }, []);
 
-  useEffect(() => {
-    void fetchRandom();
-  }, [fetchRandom]);
-
   return (
     <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -49,20 +49,20 @@ export function RandomMessageDemo() {
       </div>
 
       <div className="min-h-[4.5rem]">
-        {loading && !message ? (
-          <p className="animate-pulse text-zinc-400">Fetching a message…</p>
-        ) : error ? (
+        {error ? (
           <p className="text-red-600 dark:text-red-400">{error}</p>
-        ) : message ? (
+        ) : (
           <>
-            <p className="text-lg leading-relaxed text-zinc-900 dark:text-zinc-100">
+            <p
+              className={`text-lg leading-relaxed text-zinc-900 dark:text-zinc-100 ${loading ? "opacity-50" : ""}`}
+            >
               {message.message}
             </p>
             <p className="mt-3 font-mono text-xs text-zinc-500 dark:text-zinc-400">
               #{message.id} · {message.category}
             </p>
           </>
-        ) : null}
+        )}
       </div>
     </div>
   );

@@ -30,6 +30,11 @@ if (validationErrors.length > 0) {
   process.exit(1);
 }
 
+if (process.argv.includes("--validate-only")) {
+  console.log("Message validation passed");
+  process.exit(0);
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const exportNames = {

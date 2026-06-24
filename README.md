@@ -14,6 +14,10 @@ app/
         route.ts        # GET /api/v1/random
       messages/
         route.ts        # GET /api/v1/messages
+        [id]/
+          route.ts      # GET /api/v1/messages/:id
+      search/
+        route.ts        # GET /api/v1/search
       categories/
         route.ts        # GET /api/v1/categories
 lib/
@@ -44,7 +48,7 @@ types/
   message.ts            # Message interface
 ```
 
-Business logic lives in `lib/`, route handlers stay thin, and versioned routes sit under `app/api/v1/` so future endpoints (`/api/v1/search`, `/api/v1/message/:id`, `/api/v2/*`) can be added without reorganising the project.
+Business logic lives in `lib/`, route handlers stay thin, and versioned routes sit under `app/api/v1/` so future endpoints (`/api/v2/*`) can be added without reorganising the project.
 
 ## Local development
 
@@ -64,9 +68,29 @@ pnpm build
 pnpm start
 ```
 
+**Tests:**
+
+```bash
+pnpm test
+```
+
+**Validate message content:**
+
+```bash
+pnpm validate-messages
+```
+
+**Regenerate message data:**
+
+```bash
+pnpm generate-messages
+```
+
 ## API documentation
 
 All versioned endpoints return JSON with `Content-Type: application/json`.
+
+CORS is enabled for browser clients. Static catalogue routes include cache headers. API routes are rate limited to 100 requests per minute per IP.
 
 ### Response format
 
@@ -110,6 +134,12 @@ Health check for monitoring, load balancers, and uptime checks.
 
 Returns a single random loading message.
 
+**Query parameters**
+
+| Parameter  | Type   | Description                                    |
+| ---------- | ------ | ---------------------------------------------- |
+| `category` | string | Optional category filter (e.g. `developer`)    |
+
 **Example response**
 
 ```json
@@ -136,50 +166,83 @@ Returns a single random loading message.
 
 ### GET /api/v1/messages
 
-Returns all loading messages.
+Returns loading messages.
 
 **Query parameters**
 
 | Parameter  | Type   | Description                                      |
 | ---------- | ------ | ------------------------------------------------ |
 | `category` | string | Filter by category (e.g. `developer`, `funny`)   |
+| `page`     | number | Page number when paginating (starts at 1)        |
+| `limit`    | number | Page size when paginating (max 100)              |
 
 If the category does not exist, `data` is an empty array.
 
-**Example response** (all messages)
+When `page` or `limit` is provided, the response is paginated:
 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "message": "Teaching pigeons quantum physics...",
-      "category": "funny"
-    },
-    {
-      "id": 2,
-      "message": "Untangling spaghetti code...",
-      "category": "developer"
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "message": "Teaching pigeons quantum physics...",
+        "category": "funny"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 500,
+      "totalPages": 10
     }
-  ]
+  }
 }
 ```
 
-**Example response** (`?category=developer`)
+Without pagination parameters, `data` is a flat array of messages.
+
+---
+
+### GET /api/v1/messages/:id
+
+Returns a single message by id.
+
+**Example response**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 17,
+    "message": "Running npm install on the universe...",
+    "category": "developer"
+  }
+}
+```
+
+---
+
+### GET /api/v1/search
+
+Search messages by text or category.
+
+**Query parameters**
+
+| Parameter | Type   | Description              |
+| --------- | ------ | ------------------------ |
+| `q`       | string | Required search term     |
+
+**Example response**
 
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": 2,
-      "message": "Untangling spaghetti code...",
-      "category": "developer"
-    },
-    {
-      "id": 6,
-      "message": "Loading more loading messages...",
+      "id": 17,
+      "message": "Running npm install on the universe...",
       "category": "developer"
     }
   ]
@@ -222,7 +285,7 @@ Messages are grouped into five categories, with **100 messages in each** (500 to
 To regenerate the message catalogue (runs validation for duplicates and overused words):
 
 ```bash
-node scripts/generate-messages.mjs
+pnpm generate-messages
 ```
 
 Edit message text in `scripts/generate-messages/content/` before regenerating.
@@ -244,10 +307,30 @@ const random = await fetch("http://localhost:3000/api/v1/random").then((r) =>
   r.json(),
 );
 
+// Random developer message
+const devRandom = await fetch(
+  "http://localhost:3000/api/v1/random?category=developer",
+).then((r) => r.json());
+
 // All messages
 const all = await fetch("http://localhost:3000/api/v1/messages").then((r) =>
   r.json(),
 );
+
+// Paginated messages
+const page = await fetch(
+  "http://localhost:3000/api/v1/messages?page=1&limit=50",
+).then((r) => r.json());
+
+// Message by id
+const message = await fetch("http://localhost:3000/api/v1/messages/17").then(
+  (r) => r.json(),
+);
+
+// Search
+const results = await fetch(
+  "http://localhost:3000/api/v1/search?q=npm",
+).then((r) => r.json());
 
 // Messages by category
 const dev = await fetch(
@@ -269,8 +352,20 @@ curl http://localhost:3000/api/health
 # Random message
 curl http://localhost:3000/api/v1/random
 
+# Random message by category
+curl "http://localhost:3000/api/v1/random?category=developer"
+
 # All messages
 curl http://localhost:3000/api/v1/messages
+
+# Paginated messages
+curl "http://localhost:3000/api/v1/messages?page=1&limit=50"
+
+# Message by id
+curl http://localhost:3000/api/v1/messages/17
+
+# Search
+curl "http://localhost:3000/api/v1/search?q=npm"
 
 # Filter by category
 curl "http://localhost:3000/api/v1/messages?category=funny"
