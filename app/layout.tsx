@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description:
     "A free REST API for witty loading messages. Random lines for spinners, splash screens, and CLIs.",
   icons: {
-    icon: "/favicon.png",
+    icon: "/favicon.ico",
   },
   openGraph: {
     title: "Loading API",
